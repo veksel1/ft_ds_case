@@ -1,0 +1,6 @@
+microsof prompt:
+vs_buildtools__1145144259.1525545186.exe --includeRecommended --includeOptional
+install vs_buildtools__1145144259.1525545186.exe --includeRecommended --includeOptional
+
+anaconda prompt:
+pip install fancyimpute
