@@ -87,8 +87,7 @@ def remove_string_cols_with_unique_value_count_over_threshold(input_df, unique_c
 def normalize_df(input_df, target):
     dataset_filled = input_df.copy(deep=True)
     
-    #saving target column separately, as it should not be transformed (we need 1 and 0 for classification)
-    y = pd.DataFrame(dataset_filled[target].values)
+    y = pd.DataFrame(dataset_filled[target].values)  #saving target column separately, as it should not be transformed (we need 1 and 0 for classification)
     predictors = get_col_names_without_target(dataset_filled, target)
     
     scaler = StandardScaler() #creating an instance fo StandardScaler
@@ -120,16 +119,16 @@ def keep_unique_features_in_df(input_df, target):
     corr_matrix = dataset_normalized.corr()
     corr_with_target_abs_desc = corr_matrix[target].apply(np.abs).sort_values(ascending=False)
     unique_features = exclude_similar_features_and_get_unique(corr_with_target_abs_desc)
-    dataset_normalized_unique_features=dataset_normalized[unique_features] # - use this to keep only unique features
+    dataset_normalized_unique_features=dataset_normalized[unique_features] 
     return dataset_normalized_unique_features
 
 
 #this is the main function
 def data_setup(input_df, key_names, target, col_thresh=0.60, row_thresh=0.05, 
                test_set_flag=False, predictor_list_for_test_set=[]):
+    
     dataset_full_not_cleaned = input_df.copy(deep=True)
     dataset_full_not_cleaned_keys_dropped = dataset_full_not_cleaned.drop(key_names, axis=1)
-    #dataset_full_clean = drop_rows_and_cols_with_NA_below_thresholds(dataset_full_not_cleaned_keys_dropped, col_thresh=0.20, row_thresh=0.05)
     dataset_full = drop_rows_and_cols_with_NA_below_thresholds(dataset_full_not_cleaned_keys_dropped, 
                                                                key_names, col_thresh=col_thresh, row_thresh=row_thresh)
         
@@ -154,8 +153,8 @@ def data_setup(input_df, key_names, target, col_thresh=0.60, row_thresh=0.05,
         dataset_normalized_unique_features = keep_unique_features_in_df(dataset_normalized, target)
     else:
         predictors = get_col_names_without_target(dataset_normalized, target)
-        common_prodictor_list = get_common_predictors_list(predictors, predictor_list_for_test_set)
-        dataset_normalized_unique_features = dataset_normalized[common_prodictor_list]
+        common_predictor_list = get_common_predictors_list(predictors, predictor_list_for_test_set)
+        dataset_normalized_unique_features = dataset_normalized[common_predictor_list]
     
     return dataset_normalized_unique_features
     

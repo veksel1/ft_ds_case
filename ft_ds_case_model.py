@@ -46,8 +46,9 @@ def main():
         
     dataset_0_and_1 = pd.merge(dataset_0, dataset_1, how='left', on=key2)    
     dataset_full_not_cleaned = pd.merge(dataset_0_and_1, dataset_2, how='left', on=key1)
-    dataset_full_not_cleaned.to_csv('output_dataset_full_not_cleaned.csv', sep=';')
+    dataset_full_not_cleaned.to_csv('output_dataset_full_not_cleaned.csv', sep=';', na_rep='NA', )
     
+    #----------------------------------------------------------------------------------------------------
     #TASK 2
     #transforming the dataset    
     dataset_normalized_unique_features = data_setup(dataset_full_not_cleaned, key_names, target, col_thresh=0.60, row_thresh=0.05)
@@ -69,7 +70,8 @@ def main():
     print()
     print('Predictors sorted from the most important to unimportant:')
     print(sorted_coefficients)
-    
+
+    #----------------------------------------------------------------------------------------------------    
     #TASK 3 
     #preparing model for predictions
     Random_Forest_model = RandomForestClassifier(max_depth=26, min_samples_split=10, 
@@ -77,19 +79,20 @@ def main():
     print()
     print('Performance of Random Forest model:')
     print_scores(Random_Forest_model, train[predictors], train[target])
-     
+    
     #preparing data for which predictions should be made
-    #set_to_predict_raw = train_test_split(dataset_full_not_cleaned,   # this is an example. In production can read file from CSV instead
+    #set_to_predict_raw = train_test_split(dataset_full_not_cleaned,   # this is an example.
     #                                      test_size=0.3, random_state=1)[1]
-    set_to_predict_raw = pd.read_csv('set_to_predict.csv', sep=';') # uncomment to read a file from CSV
+    set_to_predict_raw = dataset_full_not_cleaned[:200].copy(deep=True) #hard-coded for testing
+    #set_to_predict_raw = pd.read_csv('set_to_predict.csv', sep=';') # uncomment to read a file from CSV
     
     dataset_full_not_cleaned_appended_to_set_to_predict_raw = set_to_predict_raw.append(dataset_full_not_cleaned)
     transformed_combined_set = data_setup(dataset_full_not_cleaned_appended_to_set_to_predict_raw,
-                                          key_names, target, col_thresh=0.60, row_thresh=0, test_set_flag=True,
+                                          key_names, target, col_thresh=0.10, row_thresh=0.0, test_set_flag=True,
                                           predictor_list_for_test_set = predictors)
     transformed_set_to_predict = transformed_combined_set[:len(set_to_predict_raw)].copy(deep=True)
     
-    #adjusting the model to the fact that the test case can have a different columns
+    #adjusting the model to the fact that the test case can have different columns
     predictors_for_test = get_col_names_without_target(transformed_set_to_predict, target)
     Random_Forest_model.fit(full_set[predictors_for_test], full_set[target])
     
