@@ -58,14 +58,16 @@ def convert_floats_in_string_to_floats(element):
             return element
     return element
 
+
 def get_common_predictors_list(predictor_list_1, predictor_list_2):
     common_predictor_set = set(predictor_list_1).intersection(set(predictor_list_2))
     common_predictor_list = list(common_predictor_set)
     return common_predictor_list
 
+
 def string_dates_to_sec_after_epoch_as_float(input_col):
     if input_col.dtype=='O': #in pandas dataframe columns containing Strings, has type Object, or 'O'
-        col_datetime=pd.to_datetime(input_col, format='%Y-%m-%d %H:%M', errors='ignore') #convert to datetime only if format is '%Y-%m-%d %H:%M'
+        col_datetime=pd.to_datetime(input_col, format='%Y-%m-%d %H:%M', errors='ignore') #convert to datetime only if format is '%Y-%m-%d %H:%M'. Otherwise keep it unchanged
         if col_datetime.dtype=='datetime64[ns]': 
             epoch_timestamp_col = col_datetime - dt.datetime(1970, 1, 1)
             sec_float_col = epoch_timestamp_col / np.timedelta64(1, 's')
@@ -95,23 +97,38 @@ def normalize_df(input_df, target):
     dataset_normalized_np_array = scaler.transform(dataset_filled[predictors].values) #creating numpy dataframe
     dataset_normalized = pd.DataFrame(dataset_normalized_np_array, columns=predictors) #converting numpy to pandas dataframe. Adding columns
     dataset_normalized[target] = y #adding target back
-    dataset_normalized = dataset_normalized[[target] + predictors] #for convenience putting target as a first columns
+    dataset_normalized = dataset_normalized[[target] + predictors] #for convenience putting target as the first column
     return dataset_normalized
 
 
-def exclude_similar_features_and_get_unique(corr_with_target_series, similarity_param = 0.000001):
-    exclusion_boolean_list = [True] # first item not to be excluded
-    for i in range(1, len(corr_with_target_series)):
-        if np.isnan(corr_with_target_series[i]):
-            exclusion_boolean_list.append(False)
-        elif (corr_with_target_series[i-1] - corr_with_target_series[i])<=similarity_param:
-            exclusion_boolean_list.append(False)
-        else:
-            exclusion_boolean_list.append(True)
-    unique_features = list(corr_with_target_series[exclusion_boolean_list].index)
-    return unique_features
-#use tail method, substract and other methods from pandas.series
-#or use unique
+def exclude_similar_features_and_get_unique(corr_with_target_series, similarity_thresh = 0.000001):
+    #getting 2 arrays from series - 1 array without the first element, and another without the last element
+    corr_with_target_array_less_first_el = corr_with_target_series.tail(len(corr_with_target_series)-1).values
+    corr_with_target_array_less_last_el = corr_with_target_series.head(len(corr_with_target_series)-1).values
+    
+    #calculating absoluste differences between these arrays, which is equivalent to finding difference between
+    #subsequent elements in the original series
+    corr_with_target_array_subseq_el_differences = np.abs(
+            corr_with_target_array_less_first_el - corr_with_target_array_less_last_el)
+    
+    #finding which elements has differences over similarity_thresh
+    corr_with_target_array_subseq_el_differences_over_thresh = (
+            corr_with_target_array_subseq_el_differences > similarity_thresh )
+    
+    #we will keep the first element, so assume set it to True to keep
+    first_el_diff = np.array([True])
+    corr_with_target_array_subseq_el_differences_over_thresh = np.append(
+            first_el_diff, corr_with_target_array_subseq_el_differences_over_thresh)
+    
+    #geetting boolean list that shows which elements are unique and thus should stay and which to be excluded
+    corr_with_target_array_subseq_el_differences_over_thresh_bool_list = list(
+            corr_with_target_array_subseq_el_differences_over_thresh)
+    
+    #getting a list of unique features
+    corr_with_target_series_unique = (
+            corr_with_target_series[corr_with_target_array_subseq_el_differences_over_thresh_bool_list])
+    unique_feature_list = list(corr_with_target_series_unique.index)
+    return unique_feature_list
 
 
 def keep_unique_features_in_df(input_df, target):
@@ -130,7 +147,8 @@ def data_setup(input_df, key_names, target, col_thresh=0.60, row_thresh=0.05,
     dataset_full_not_cleaned = input_df.copy(deep=True)
     dataset_full_not_cleaned_keys_dropped = dataset_full_not_cleaned.drop(key_names, axis=1)
     dataset_full = drop_rows_and_cols_with_NA_below_thresholds(dataset_full_not_cleaned_keys_dropped, 
-                                                               key_names, col_thresh=col_thresh, row_thresh=row_thresh)
+                                                               key_names, col_thresh=col_thresh, 
+                                                               row_thresh=row_thresh)
         
     dataset_full = dataset_full.applymap(replace_commas_with_dots_in_string)
     dataset_full = dataset_full.applymap(replace_spec_chars_with_space_in_string)

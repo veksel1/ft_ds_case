@@ -51,7 +51,8 @@ def main():
     #----------------------------------------------------------------------------------------------------
     #TASK 2
     #transforming the dataset    
-    dataset_normalized_unique_features = data_setup(dataset_full_not_cleaned, key_names, target, col_thresh=0.60, row_thresh=0.05)
+    dataset_normalized_unique_features = data_setup(dataset_full_not_cleaned, 
+                                            key_names, target, col_thresh=0.60, row_thresh=0.05)
     
     #preparing and training logistic regression model
     full_set = dataset_normalized_unique_features
@@ -59,6 +60,7 @@ def main():
     predictors = get_col_names_without_target(full_set, target)
     log_reg_final = LogisticRegression(penalty='l1', C=0.1, fit_intercept=True, random_state=1)
     print()
+    print('************************************************************************************')
     print('Performance of Logistic regression model:')
     print_scores(log_reg_final, train[predictors], train[target])
     log_reg_final.fit(full_set[predictors], full_set[target])
@@ -68,6 +70,7 @@ def main():
     coef_series = pd.Series(coef_array[0], predictors)
     sorted_coefficients = coef_series.apply(np.abs).sort_values(ascending=False)
     print()
+    print('************************************************************************************')
     print('Predictors sorted from the most important to unimportant:')
     print(sorted_coefficients)
 
@@ -77,15 +80,17 @@ def main():
     Random_Forest_model = RandomForestClassifier(max_depth=26, min_samples_split=10, 
                                              n_estimators=50, n_jobs=-1, random_state=1)
     print()
+    print('************************************************************************************')
     print('Performance of Random Forest model:')
     print_scores(Random_Forest_model, train[predictors], train[target])
     
-    #preparing data for which predictions should be made
-    #set_to_predict_raw = train_test_split(dataset_full_not_cleaned,   # this is an example.
-    #                                      test_size=0.3, random_state=1)[1]
+    #obtaining data for which predictions should be made
+        #####set_to_predict_raw = train_test_split(dataset_full_not_cleaned,   # this is an example.
+        #####                                      test_size=0.3, random_state=1)[1]
     set_to_predict_raw = dataset_full_not_cleaned[:200].copy(deep=True) #hard-coded for testing
-    #set_to_predict_raw = pd.read_csv('set_to_predict.csv', sep=';') # uncomment to read a file from CSV
+        #####set_to_predict_raw = pd.read_csv('set_to_predict.csv', sep=';') # uncomment to read a file from CSV
     
+    #cleaning and transforming data for which predictions should be made
     dataset_full_not_cleaned_appended_to_set_to_predict_raw = set_to_predict_raw.append(dataset_full_not_cleaned)
     transformed_combined_set = data_setup(dataset_full_not_cleaned_appended_to_set_to_predict_raw,
                                           key_names, target, col_thresh=0.10, row_thresh=0.0, test_set_flag=True,
@@ -96,9 +101,9 @@ def main():
     predictors_for_test = get_col_names_without_target(transformed_set_to_predict, target)
     Random_Forest_model.fit(full_set[predictors_for_test], full_set[target])
     
-    #making a predictions       
+    #making predictions and saving them in a CSV-file       
     predictions = Random_Forest_model.predict(transformed_set_to_predict[predictors_for_test])
-    transformed_set_to_predict = transformed_set_to_predict.assign(predictions=predictions)
+    transformed_set_to_predict = transformed_set_to_predict.assign(predictions=predictions) #adding a column with predictions
     transformed_set_to_predict.to_csv('out_predictions.csv', sep=';')  
     
 if __name__ == "__main__":
